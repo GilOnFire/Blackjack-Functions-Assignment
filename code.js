@@ -1,6 +1,43 @@
 let playerHand = [];
 let dealerHand = [];
 let gameActive = false;
+let shuffleSoundCandidates = [
+    'shuffle.mp3',
+    
+];
+let shuffleSoundIndex = 0;
+
+function initializeShuffleSound() {
+    const sound = document.getElementById('shuffleSound');
+    if (!sound) return;
+
+    sound.addEventListener('error', function () {
+        if (shuffleSoundIndex < shuffleSoundCandidates.length - 1) {
+            shuffleSoundIndex += 1;
+            sound.src = shuffleSoundCandidates[shuffleSoundIndex];
+            sound.load();
+        }
+    });
+
+    sound.src = shuffleSoundCandidates[shuffleSoundIndex];
+    sound.load();
+}
+
+function playShuffleSound() {
+    const sound = document.getElementById('shuffleSound');
+    if (!sound) return;
+
+    if (!sound.src) {
+        initializeShuffleSound();
+        return;
+    }
+
+    sound.pause();
+    sound.currentTime = 0;
+    sound.play().catch(function () {
+        // Browser autoplay rules may block playback until the player clicks a button.
+    });
+}
 
 // Deck of cards represented as an array of values
 var DECK_REFRESH_THRESHOLD = 8; // when deck length falls to this, refresh
@@ -24,10 +61,17 @@ function shuffle(array) {
 var deck = createDeck();
 shuffle(deck);
 
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeShuffleSound);
+} else {
+    initializeShuffleSound();
+}
+
 // Function to reset the deck (reshuffle)
 function resetDeck() {
     deck = createDeck();
     shuffle(deck);
+    playShuffleSound();
     console.log('Deck reset (reshuffled)');
 }
 
@@ -82,13 +126,14 @@ function stand() {
     } else {
         message = 'Dealer wins.';
     }
-    var playerWon = (dealerTotal > 21 || playerTotal > dealerTotal);
+    var playerWon = (dealerTotal < 21 && playerTotal > dealerTotal);
     endGame(message, playerWon);
 }
 // Function to start a new game
 function startGame() {
     console.log("Start Game button clicked");
     hideResult();
+    playShuffleSound();
     // Initialize player's hand
     playerHand = [drawRandomCard(), drawRandomCard()];
     // Initialize dealer's hand
